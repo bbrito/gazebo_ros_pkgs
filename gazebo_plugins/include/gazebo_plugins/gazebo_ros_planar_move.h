@@ -83,10 +83,15 @@ namespace gazebo {
       void QueueThread();
 
       // command velocity callback
-      void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& cmd_msg);
+      void cmdVelCallback(const geometry_msgs::PoseStamped::ConstPtr& cmd_msg);
 
       double x_;
       double y_;
+      double qx_;
+      double qy_;
+      double qz_;
+      double qw_;
+      std::string id_;
       double rot_;
       bool alive_;
       bool enable_y_axis_; ///< Enable Y-axis movement.

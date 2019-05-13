@@ -67,6 +67,7 @@ GazeboRosBumper::~GazeboRosBumper()
 void GazeboRosBumper::Load(sensors::SensorPtr _parent, sdf::ElementPtr _sdf)
 {
   GAZEBO_SENSORS_USING_DYNAMIC_POINTER_CAST;
+  ROS_ERROR("Hello");
   this->parentSensor = dynamic_pointer_cast<sensors::ContactSensor>(_parent);
   if (!this->parentSensor)
   {

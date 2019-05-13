@@ -134,7 +134,27 @@ namespace gazebo
     last_odom_pose_ = parent_->GetWorldPose().Ign();
 #endif
     x_ = 0;
+    if (!sdf->HasElement("ini_x"))
+    {
+        ROS_WARN_NAMED("planar_move", "PlanarMovePlugin (ns = %s) missing <ini_x>, "
+                               "defaults to %f",
+                       robot_namespace_.c_str(), x_);
+    }
+    else
+    {
+        x_ = sdf->GetElement("ini_x")->Get<double>();
+    }
     y_ = 0;
+    if (!sdf->HasElement("ini_y"))
+    {
+        ROS_WARN_NAMED("planar_move", "PlanarMovePlugin (ns = %s) missing <ini_y>, "
+                               "defaults to %f",
+                       robot_namespace_.c_str(),y_);
+    }
+    else
+    {
+        y_ = sdf->GetElement("ini_x")->Get<double>();
+    }
     rot_ = 0;
     alive_ = true;
 
@@ -157,7 +177,7 @@ namespace gazebo
 
     // subscribe to the odometry topic
     ros::SubscribeOptions so =
-      ros::SubscribeOptions::create<geometry_msgs::Twist>(command_topic_, 1,
+      ros::SubscribeOptions::create<geometry_msgs::PoseStamped>(command_topic_, 1,
           boost::bind(&GazeboRosPlanarMove::cmdVelCallback, this, _1),
           ros::VoidPtr(), &queue_);
 
@@ -184,12 +204,20 @@ namespace gazebo
 #else
     ignition::math::Pose3d pose = parent_->GetWorldPose().Ign();
 #endif
-    float yaw = pose.Rot().Yaw();
-    parent_->SetLinearVel(ignition::math::Vector3d(
+
+    /*parent_->SetLinearVel(ignition::math::Vector3d(
           x_ * cosf(yaw) - y_ * sinf(yaw),
           y_ * cosf(yaw) + x_ * sinf(yaw),
           0));
-    parent_->SetAngularVel(ignition::math::Vector3d(0, 0, rot_));
+    */
+      //ignition::math::Vector3<double> pos(x_,y_,0);
+      //ignition::math::Quaternion<double> q();
+
+    ignition::math::Pose3d test(x_,y_,0,qw_,qx_,qy_,qw_);
+    //ROS_INFO_STREAM("Frame:" << id_);
+    //parent_->SetLinkWorldPose(test,id_);
+    parent_->SetWorldPose(test);
+
     if (odometry_rate_ > 0.0) {
 #if GAZEBO_MAJOR_VERSION >= 8
       common::Time current_time = parent_->GetWorld()->SimTime();
@@ -215,15 +243,17 @@ namespace gazebo
   }
 
   void GazeboRosPlanarMove::cmdVelCallback(
-      const geometry_msgs::Twist::ConstPtr& cmd_msg)
+      const geometry_msgs::PoseStamped::ConstPtr& cmd_msg)
   {
     boost::mutex::scoped_lock scoped_lock(lock);
-    x_ = cmd_msg->linear.x;
-    if (enable_y_axis_)
-    {
-      y_ = cmd_msg->linear.y;
-    }
-    rot_ = cmd_msg->angular.z;
+    x_ = cmd_msg->pose.position.x;
+    y_ = cmd_msg->pose.position.y;
+
+    qx_ = cmd_msg->pose.orientation.x;
+    qy_ = cmd_msg->pose.orientation.y;
+    qz_ = cmd_msg->pose.orientation.z;
+    qw_ = cmd_msg->pose.orientation.w;
+    id_ = cmd_msg->header.frame_id;
   }
 
   void GazeboRosPlanarMove::QueueThread()
